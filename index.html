@@ -786,7 +786,6 @@
             const p1 = new THREE.PointLight(0x00ffff, 2, 60); p1.position.set(20, 20, 10); scene.add(p1);
             const p2 = new THREE.PointLight(0xff00ff, 2, 60); p2.position.set(-20, -20, 10); scene.add(p2);
 
-            createDustClouds();
             createStarfield();
             createSceneContent();
             window.addEventListener('resize', () => {
@@ -890,37 +889,6 @@
         }
 
         // --- Scene Content ---
-        function createDustClouds() {
-            dustGroup = new THREE.Group();
-            scene.add(dustGroup);
-
-            const loader = new THREE.TextureLoader();
-            const colors = [0x4b0082, 0x00ffff, 0xffffff, 0x0088ff]; // Added some colors
-
-            for (let i = 0; i < 40; i++) {
-                const photoData = USER_PHOTOS[i % USER_PHOTOS.length];
-                const photoTex = loader.load(encodeURI(photoData.url));
-
-                const mat = new THREE.SpriteMaterial({
-                    map: photoTex,
-                    color: colors[i % colors.length],
-                    transparent: true,
-                    opacity: 0.25, // Slightly more visible
-                    blending: THREE.AdditiveBlending
-                });
-                const sprite = new THREE.Sprite(mat);
-                sprite.position.set((Math.random() - 0.5) * 200, (Math.random() - 0.5) * 200, (Math.random() - 0.5) * 150);
-                sprite.scale.set(15 + Math.random() * 20, 15 + Math.random() * 20, 1);
-
-                sprite.userData = {
-                    vel: new THREE.Vector3((Math.random() - 0.5) * 0.02, (Math.random() - 0.5) * 0.02, (Math.random() - 0.5) * 0.02)
-                };
-
-                dustNodes.push(sprite);
-                dustGroup.add(sprite);
-            }
-        }
-
         function createStarfield() {
             starGroup = new THREE.Group();
             scene.add(starGroup);
@@ -1224,12 +1192,6 @@
                 starGroup.children[0].material.uniforms.uTime.value = time;
             }
 
-            // Animate Cosmic Dust
-            dustNodes.forEach(dust => {
-                dust.position.add(dust.userData.vel);
-                if (Math.abs(dust.position.x) > 150) dust.userData.vel.x *= -1;
-                if (Math.abs(dust.position.y) > 150) dust.userData.vel.y *= -1;
-            });
 
             // Smoothly interpolate camera
             currentX += (targetX - currentX) * CONFIG.smoothFactor;
