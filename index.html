@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>WYNX Universe</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            touch-action: none;
+            color: white;
+        }
+
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* UI Layer */
+        #status-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+        }
+
+        /* Gallery Modal Styling */
+        #gallery-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 0, 20, 0.92);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        #gallery-modal.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background: linear-gradient(145deg,
+                    rgba(20, 5, 45, 0.85) 0%,
+                    rgba(10, 3, 28, 0.9) 100%);
+            backdrop-filter: blur(40px) saturate(160%);
+            -webkit-backdrop-filter: blur(40px) saturate(160%);
+            border: 1px solid rgba(120, 40, 220, 0.2);
+            border-top: 1px solid rgba(180, 80, 255, 0.3);
+            border-radius: 30px;
+            padding: 50px;
+            max-width: 1100px;
+            width: 85%;
+            max-height: 85vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow:
+                0 30px 80px rgba(0, 0, 0, 0.8),
+                0 0 60px rgba(80, 20, 180, 0.1),
+                inset 0 1px 0 rgba(180, 100, 255, 0.15);
+            color: white;
+            animation: modalFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.98);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal-body {
+            display: grid;
+            grid-template-columns: 1.8fr 1fr;
+            /* Widen the visual area */
+            gap: 40px;
+            align-items: start;
+        }
+
+        .image-section {
+            display: flex;
+            flex-direction: row;
+            /* Change to side-by-side */
+            gap: 20px;
+            align-items: flex-end;
+        }
+
+        .modal-image-container {
+            flex: 1.5;
+            background: rgba(40, 10, 80, 0.35);
+            border-radius: 12px;
+            padding: 12px;
+            border: 1px solid rgba(120, 40, 220, 0.2);
+        }
+
+        .modal-image {
+            width: 100%;
+            height: auto;
+            max-height: 450px;
+            object-fit: contain;
+            border-radius: 6px;
+            display: block;
+        }
+
+        .cert-card {
+            flex: 1;
+            width: 100%;
+            max-width: 220px;
+            height: auto;
+            border-radius: 4px;
+            filter: contrast(1.05) brightness(1.1);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(150, 80, 255, 0.15);
+        }
+
+        .art-info {
+            padding-top: 10px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg,
+                    rgba(150, 60, 255, 0.22) 0%,
+                    rgba(80, 20, 180, 0.10) 100%);
+            color: rgba(210, 160, 255, 0.95);
+            padding: 7px 18px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 11px;
+            margin-bottom: 25px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            backdrop-filter: blur(14px) saturate(180%);
+            -webkit-backdrop-filter: blur(14px) saturate(180%);
+            border: 1px solid rgba(160, 70, 255, 0.32);
+            box-shadow:
+                0 4px 20px rgba(40, 0, 120, 0.3),
+                inset 0 1px 0 rgba(200, 130, 255, 0.25),
+                inset 0 -1px 0 rgba(100, 30, 200, 0.08);
+            text-shadow: 0 0 12px rgba(180, 100, 255, 0.5);
+        }
+
+        .badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(200, 140, 255, 0.95);
+            box-shadow: 0 0 8px rgba(180, 100, 255, 0.8);
+            animation: artPulse 2s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes artPulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.35;
+                transform: scale(0.55);
+            }
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        .close-btn:hover {
+            color: #fff;
+        }
+
+        .art-info h2 {
+            margin: 0 0 20px 0;
+            font-size: 2.4rem;
+            font-weight: 200;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            color: #fff;
+        }
+
+        .divider {
+            width: 40px;
+            height: 2px;
+            background: rgba(160, 80, 255, 0.6);
+            margin: 0 0 25px 0;
+        }
+
+        .art-info p {
+            color: rgba(200, 160, 255, 0.5);
+            line-height: 2.2;
+            font-size: 1rem;
+            font-weight: 300;
+            margin: 0;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            padding: 40px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        #webcam-preview {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            width: 160px;
+            height: auto;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            opacity: 0.7;
+            transform: scaleX(-1);
+            display: none;
+            z-index: 15;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        h1 {
+            color: #fff;
+            margin: 0;
+            font-size: 24px;
+            font-weight: 200;
+            text-transform: uppercase;
+            letter-spacing: 6px;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+        }
+
+        p {
+            color: #888;
+            font-size: 11px;
+            margin: 8px 0 0 0;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        #status-box {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px 20px;
+            max-width: 280px;
+            margin-top: 25px;
+            border-radius: 12px;
+            pointer-events: auto;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+        }
+
+        .status-line {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 10px;
+            letter-spacing: 0.5px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .success {
+            color: #f0f0f0;
+        }
+
+        .error {
+            color: #cecece;
+        }
+
+        .warn {
+            color: #626262;
+        }
+
+        .info {
+            color: #646464;
+        }
+
+        #start-btn {
+            pointer-events: auto;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 18px 40px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            cursor: pointer;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            backdrop-filter: blur(15px);
+            z-index: 20;
+            letter-spacing: 4px;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            border-radius: 4px;
+        }
+
+        /* Coin Transition Overlay */
+        #transition-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+            background: transparent;
+        }
+
+        #transition-video {
+            width: 60%;
+            max-width: 600px;
+            mix-blend-mode: screen;
+            filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.3));
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        /* AI Work Modal */
+        #ai-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 5, 20, 0.92);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        #ai-modal.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .ai-modal-content {
+            background: linear-gradient(145deg,
+                    rgba(6, 15, 40, 0.85) 0%,
+                    rgba(3, 8, 25, 0.9) 100%);
+            backdrop-filter: blur(40px) saturate(160%);
+            -webkit-backdrop-filter: blur(40px) saturate(160%);
+            border: 1px solid rgba(30, 90, 200, 0.2);
+            border-top: 1px solid rgba(80, 140, 255, 0.3);
+            border-radius: 30px;
+            padding: 50px;
+            max-width: 1100px;
+            width: 85%;
+            max-height: 85vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow:
+                0 30px 80px rgba(0, 0, 0, 0.8),
+                0 0 60px rgba(20, 60, 180, 0.1),
+                inset 0 1px 0 rgba(80, 140, 255, 0.15);
+            color: white;
+            animation: aiModalFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes aiModalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.98);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .ai-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg,
+                    rgba(30, 80, 200, 0.25) 0%,
+                    rgba(10, 40, 130, 0.12) 100%);
+            color: rgba(140, 180, 255, 0.9);
+            padding: 7px 18px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 11px;
+            margin-bottom: 25px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            backdrop-filter: blur(14px) saturate(180%);
+            -webkit-backdrop-filter: blur(14px) saturate(180%);
+            border: 1px solid rgba(60, 120, 255, 0.3);
+            box-shadow:
+                0 4px 20px rgba(0, 20, 100, 0.3),
+                inset 0 1px 0 rgba(100, 160, 255, 0.25),
+                inset 0 -1px 0 rgba(30, 80, 200, 0.08);
+            text-shadow: 0 0 12px rgba(100, 160, 255, 0.5);
+        }
+
+        .ai-badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(100, 180, 255, 0.9);
+            box-shadow: 0 0 8px rgba(100, 180, 255, 0.8);
+            animation: aiPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes aiPulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.4;
+                transform: scale(0.6);
+            }
+        }
+
+        .ai-modal-body {
+            display: grid;
+            grid-template-columns: 1.8fr 1fr;
+            gap: 40px;
+            align-items: start;
+        }
+
+        .ai-image-section {
+            background: rgba(10, 25, 70, 0.4);
+            border-radius: 12px;
+            padding: 12px;
+            border: 1px solid rgba(40, 90, 200, 0.2);
+        }
+
+        .ai-modal-image {
+            width: 100%;
+            height: auto;
+            max-height: 450px;
+            object-fit: contain;
+            border-radius: 6px;
+            display: block;
+        }
+
+        .ai-image-placeholder {
+            width: 100%;
+            height: 380px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            background: linear-gradient(135deg, rgba(10, 30, 90, 0.5), rgba(5, 15, 50, 0.8));
+            border: 1px dashed rgba(40, 90, 200, 0.3);
+            color: rgba(80, 130, 220, 0.5);
+            font-size: 11px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        .ai-info {
+            padding-top: 10px;
+        }
+
+        .ai-info h2 {
+            margin: 0 0 20px 0;
+            font-size: 2.4rem;
+            font-weight: 200;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            color: #fff;
+        }
+
+        .ai-desc-text {
+            color: rgba(160, 190, 255, 0.5);
+            line-height: 2.2;
+            font-size: 1rem;
+            font-weight: 300;
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="status-panel"></div>
+
+    <!-- Gallery Modal -->
+    <div id="gallery-modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <div class="modal-body">
+                <div class="image-section">
+                    <div class="modal-image-container">
+                        <img id="modal-img" class="modal-image" src="" alt="Art detail">
+                    </div>
+                    <img class="cert-card" src="art_work/Frame 28.png" alt="Card">
+                </div>
+                <div class="art-info">
+                    <div class="badge">Certified Artwork</div>
+                    <h2 id="modal-title">TITLE</h2>
+                    <div class="divider"></div>
+                    <p id="modal-desc">Description</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Work Modal -->
+    <div id="ai-modal">
+        <div class="ai-modal-content">
+            <span class="close-btn" onclick="closeAIModal()">&times;</span>
+            <div class="ai-modal-body">
+                <div class="ai-image-section">
+                    <img id="ai-modal-img" class="ai-modal-image" src="" alt="AI Work" style="display:none;">
+                    <div id="ai-modal-placeholder" class="ai-image-placeholder">No Image</div>
+                </div>
+                <div class="ai-info">
+                    <div class="ai-badge">AI Work</div>
+                    <h2 id="ai-modal-title">TITLE</h2>
+                    <div class="divider"></div>
+                    <p id="ai-modal-desc" class="ai-desc-text">Description</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <!-- Transition Overlay -->
+    <div id="transition-overlay">
+        <video id="transition-video" muted playsinline></video>
+    </div>
+
+    <!-- Hidden video element for TF.js -->
+    <video id="video" playsinline style="display:none"></video>
+    <!-- Visible preview (optional) -->
+    <canvas id="webcam-preview"></canvas>
+
+    <div id="ui-layer">
+        <div>
+            <h1>WYNX Universe</h1>
+            <div id="status-box">
+                <span id="log-cam" class="status-line warn">Camera: Waiting...</span>
+                <span id="log-model" class="status-line warn">Face Model: Waiting...</span>
+                <span id="log-track" class="status-line info">Tracking: Inactive</span>
+            </div>
+        </div>
+    </div>
+
+    <button id="start-btn">Initialize Camera</button>
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- TensorFlow.js and Blazeface -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface"></script>
+
+    <!-- Star Twinkle & Tech Shaders -->
+    <!-- Metaball (Blob) Shaders -->
+    <script id="blobVertexShader" type="x-shader/x-vertex">
+        varying vec2 vUv;
+        varying vec3 vNormal;
+        uniform float uTime;
+        
+        // Simple noise for organic wobble
+        float hash(float n) { return fract(sin(n) * 43758.5453123); }
+        float noise(vec3 x) {
+            vec3 p = floor(x);
+            vec3 f = fract(x);
+            f = f*f*(3.0-2.0*f);
+            float n = p.x + p.y*57.0 + 113.0*p.z;
+            return mix(mix(mix( hash(n+  0.0), hash(n+  1.0),f.x),
+                           mix( hash(n+ 57.0), hash(n+ 58.0),f.x),f.y),
+                       mix(mix( hash(n+113.0), hash(n+114.0),f.x),
+                           mix( hash(n+170.0), hash(n+171.0),f.x),f.y),f.z);
+        }
+
+        void main() {
+            vUv = uv;
+            vNormal = normal;
+            // Increased distortion for a more 'metaball' liquid feel
+            float distortion = noise(position * 2.5 + uTime * 0.8) * 0.35;
+            vec3 newPos = position + normal * distortion;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(newPos, 1.0);
+        }
+    </script>
+    <script id="blobFragmentShader" type="x-shader/x-fragment">
+        varying vec3 vNormal;
+        uniform vec3 uColor;
+        uniform float uOpacity;
+
+        void main() {
+            // High-tech holographic rim glow
+            float rim = 1.0 - max(dot(vNormal, vec3(0.0, 0.0, 1.0)), 0.0);
+            rim = pow(rim, 3.0);
+            
+            // Reduce white rim influence (0.6 -> 0.3) to make the base color "deeper"
+            vec3 finalColor = mix(uColor, vec3(1.0), rim * 0.3);
+            gl_FragColor = vec4(finalColor, uOpacity);
+        }
+    </script>
+
+    <script id="starVertexShader" type="x-shader/x-vertex">
+        attribute float aSize;
+        attribute float aOffset;
+        attribute float aSpeed;
+        varying float vTwinkle;
+        uniform float uTime;
+
+        void main() {
+            // Sharp individual twinkling logic
+            float t = uTime * aSpeed + aOffset;
+            vTwinkle = pow(sin(t) * 0.5 + 0.5, 3.0); // Sharpen the peak
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            gl_PointSize = aSize * (1.0 + vTwinkle * 0.5) * (300.0 / -mvPosition.z);
+            gl_Position = projectionMatrix * mvPosition;
+        }
+    </script>
+    <script id="starFragmentShader" type="x-shader/x-fragment">
+        varying float vTwinkle;
+        void main() {
+            float dist = distance(gl_PointCoord, vec2(0.5));
+            if (dist > 0.5) discard;
+            float alpha = smoothstep(0.5, 0.2, dist) * (0.3 + vTwinkle * 0.7);
+            gl_FragColor = vec4(1.0, 1.0, 1.0, alpha);
+        }
+    </script>
+
+    <script>
+        // --- Configuration ---
+        const CONFIG = {
+            camSensitivity: 4.0,
+            smoothFactor: 0.08,
+            starCount: 6000,
+            plexusCount: 300,
+            maxDistance: 15,
+            photoCount: 12
+        };
+
+        const USER_AI_WORKS = [
+            {
+                title: 'The Boy and the Purple Sea',
+                type: 'Generative Image',
+                model: 'Midjourney v6',
+                year: '2024',
+                description: 'AI-generated visual exploration.',
+                url: 'art_work/aiwork1.png'
+            },
+            {
+                title: 'Photo of Wine in the Sink',
+                type: 'Text-to-Image',
+                model: 'Stable Diffusion XL',
+                year: '2024',
+                description: 'AI-generated visual exploration.',
+                url: 'art_work/aiwork2.png'
+            },
+            {
+                title: 'Aetherspir',
+                type: 'Generative Art',
+                model: 'DALL·E 3',
+                year: '2025',
+                description: 'AI-generated visual exploration.',
+                url: 'art_work/aiwork3.jpg'
+            },
+            {
+                title: 'The living archive',
+                type: 'Neural Synthesis',
+                model: 'ComfyUI',
+                year: '2025',
+                description: 'AI-generated visual exploration.',
+                url: 'art_work/aiwork4.png'
+            }
+        ];
+
+        const USER_PHOTOS = [
+            {
+                url: 'art_work/IMG_1945 2.jpeg',
+                title: 'Still life observational painting',
+                description: 'Oil on Canvas, Aug 2022, 35cmX25.5cm'
+            },
+            {
+                url: 'art_work/IMG_5400.jpeg',
+                title: 'FACE-E',
+                description: 'May. 2022 Poster painting and Ballpoint Pen 25.5cmX38.5SIZE'
+            },
+            {
+                url: 'art_work/IMG_5553.jpg',
+                title: 'inner self',
+                description: 'Jun. 2020 Ballpoint Pen 27.4cmX39.5cmSIZE'
+            },
+            {
+                url: 'art_work/IMG_5759.jpg',
+                title: 'TIMES',
+                description: 'July. 2021 Pencil 37cmX53.4cmSIZE'
+            },
+            {
+                url: 'art_work/눈과_비행기_보정.jpg',
+                title: 'Eye and Airplane',
+                description: 'Apr. 2021 Pastel 36.4cmX51.5cmSIZE'
+            },
+            {
+                url: 'art_work/파스텔_사진보정4 11.jpg',
+                title: 'The Rainy City of Seoul',
+                description: 'May. 2022 Oil pastel 46.8cmX63.6cmSIZE'
+            }
+        ];
+
+        // --- Global State ---
+        let scene, camera, renderer, mainGroup, starGroup, plexusGroup, dustGroup;
+        let model = null;
+        let video = document.getElementById('video');
+        let isTracking = false;
+
+        // Interaction Globals
+        let raycaster = new THREE.Raycaster();
+        let mouseVector = new THREE.Vector2();
+        let interactiveObjects = [];
+        let plexusNodes = [];
+        let dustNodes = [];
+
+        // Tracking Coords
+        let targetX = 0, targetY = 0;
+        let currentX = 0, currentY = 0;
+        let time = 0;
+
+        // Logging
+        const logCam = document.getElementById('log-cam');
+        const logModel = document.getElementById('log-model');
+        const logTrack = document.getElementById('log-track');
+
+        // --- Initialization ---
+        function initThree() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x050505); // Slightly brighter Abyss
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
+            camera.position.z = 18;
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            // Lights
+            scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+            const p1 = new THREE.PointLight(0x00ffff, 2, 60); p1.position.set(20, 20, 10); scene.add(p1);
+            const p2 = new THREE.PointLight(0xff00ff, 2, 60); p2.position.set(-20, -20, 10); scene.add(p2);
+
+            createDustClouds();
+            createStarfield();
+            createSceneContent();
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // Add Touch/Mouse Fallback immediately (always active)
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('touchmove', onTouchMove, { passive: false });
+
+            // Click/Tap Listener for Cubes
+            window.addEventListener('click', onCanvasClick, false);
+
+            animate();
+        }
+
+        // --- Interaction Logic ---
+        function onCanvasClick(event) {
+            mouseVector.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouseVector.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouseVector, camera);
+            const intersects = raycaster.intersectObjects(interactiveObjects);
+
+            if (intersects.length > 0) {
+                const obj = intersects[0].object;
+                obj.userData.spinSpeed = 0.2;
+
+                if (obj.userData.photoIndex !== undefined) {
+                    showModal(obj.userData.photoIndex);
+                } else if (obj.userData.aiIndex !== undefined) {
+                    showAIModal(obj.userData.aiIndex);
+                }
+            }
+        }
+
+        function showModal(index) {
+            const data = USER_PHOTOS[index % USER_PHOTOS.length];
+            const overlay = document.getElementById('transition-overlay');
+            const video = document.getElementById('transition-video');
+            const modal = document.getElementById('gallery-modal');
+
+            // 1. Prepare Content
+            document.getElementById('modal-img').src = data.url;
+            document.getElementById('modal-title').innerText = data.title;
+            document.getElementById('modal-desc').innerText = data.description;
+            modal.style.display = 'none';
+            modal.classList.remove('active');
+
+            // 2. Play Coin Animation
+            overlay.style.display = 'flex';
+            video.src = 'art_work/new coin animation.mp4';
+            video.style.opacity = '1';
+            video.play();
+
+            // 3. Sequence to B&W Modal
+            video.onended = () => {
+                video.style.opacity = '0';
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                    modal.style.display = 'flex';
+                    setTimeout(() => modal.classList.add('active'), 50);
+                }, 500);
+            };
+
+            setTimeout(() => { if (modal.style.display === 'none') video.onended(); }, 3500);
+        }
+
+        function closeModal() {
+            document.getElementById('gallery-modal').classList.remove('active');
+        }
+
+        function showAIModal(index) {
+            const data = USER_AI_WORKS[index % USER_AI_WORKS.length];
+            const modal = document.getElementById('ai-modal');
+            const img = document.getElementById('ai-modal-img');
+            const placeholder = document.getElementById('ai-modal-placeholder');
+
+            document.getElementById('ai-modal-title').innerText = data.title;
+            document.getElementById('ai-modal-desc').innerText = data.description;
+
+            if (data.url) {
+                img.src = data.url;
+                img.style.display = 'block';
+                placeholder.style.display = 'none';
+            } else {
+                img.style.display = 'none';
+                placeholder.style.display = 'flex';
+            }
+
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('active'), 50);
+        }
+
+        function closeAIModal() {
+            const modal = document.getElementById('ai-modal');
+            modal.classList.remove('active');
+            setTimeout(() => { modal.style.display = 'none'; }, 600);
+        }
+
+        // --- Scene Content ---
+        function createDustClouds() {
+            dustGroup = new THREE.Group();
+            scene.add(dustGroup);
+
+            const loader = new THREE.TextureLoader();
+            const colors = [0x4b0082, 0x00ffff, 0xffffff, 0x0088ff]; // Added some colors
+
+            for (let i = 0; i < 40; i++) {
+                const photoData = USER_PHOTOS[i % USER_PHOTOS.length];
+                const photoTex = loader.load(encodeURI(photoData.url));
+
+                const mat = new THREE.SpriteMaterial({
+                    map: photoTex,
+                    color: colors[i % colors.length],
+                    transparent: true,
+                    opacity: 0.25, // Slightly more visible
+                    blending: THREE.AdditiveBlending
+                });
+                const sprite = new THREE.Sprite(mat);
+                sprite.position.set((Math.random() - 0.5) * 200, (Math.random() - 0.5) * 200, (Math.random() - 0.5) * 150);
+                sprite.scale.set(15 + Math.random() * 20, 15 + Math.random() * 20, 1);
+
+                sprite.userData = {
+                    vel: new THREE.Vector3((Math.random() - 0.5) * 0.02, (Math.random() - 0.5) * 0.02, (Math.random() - 0.5) * 0.02)
+                };
+
+                dustNodes.push(sprite);
+                dustGroup.add(sprite);
+            }
+        }
+
+        function createStarfield() {
+            starGroup = new THREE.Group();
+            scene.add(starGroup);
+
+            const starGeo = new THREE.BufferGeometry();
+            const pos = new Float32Array(CONFIG.starCount * 3);
+            const size = new Float32Array(CONFIG.starCount);
+            const offset = new Float32Array(CONFIG.starCount);
+            const speed = new Float32Array(CONFIG.starCount);
+
+            for (let i = 0; i < CONFIG.starCount; i++) {
+                const radius = 200 + Math.random() * 800;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+                pos[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+                pos[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+                pos[i * 3 + 2] = radius * Math.cos(phi);
+
+                size[i] = 1.0 + Math.random() * 2.0;
+                offset[i] = Math.random() * 10.0;
+                speed[i] = 0.5 + Math.random() * 2.5;
+            }
+
+            starGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+            starGeo.setAttribute('aSize', new THREE.BufferAttribute(size, 1));
+            starGeo.setAttribute('aOffset', new THREE.BufferAttribute(offset, 1));
+            starGeo.setAttribute('aSpeed', new THREE.BufferAttribute(speed, 1));
+
+            const starMat = new THREE.ShaderMaterial({
+                uniforms: { uTime: { value: 0 } },
+                vertexShader: document.getElementById('starVertexShader').textContent,
+                fragmentShader: document.getElementById('starFragmentShader').textContent,
+                transparent: true,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+            starGroup.add(new THREE.Points(starGeo, starMat));
+
+            // Constellation Plexus (extremely thin lines)
+            plexusGroup = new THREE.Group();
+            scene.add(plexusGroup);
+
+            const nodesPos = new Float32Array(CONFIG.plexusCount * 3);
+            for (let i = 0; i < CONFIG.plexusCount; i++) {
+                const node = {
+                    pos: new THREE.Vector3((Math.random() - 0.5) * 120, (Math.random() - 0.5) * 120, (Math.random() - 0.5) * 100),
+                    vel: new THREE.Vector3((Math.random() - 0.5) * 0.03, (Math.random() - 0.5) * 0.03, (Math.random() - 0.5) * 0.03)
+                };
+                plexusNodes.push(node);
+                nodesPos[i * 3] = node.pos.x;
+                nodesPos[i * 3 + 1] = node.pos.y;
+                nodesPos[i * 3 + 2] = node.pos.z;
+            }
+            const nodesGeo = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(nodesPos, 3));
+
+            // Circular nodes shader material
+            const nodesMat = new THREE.ShaderMaterial({
+                uniforms: { uTime: { value: 0 } },
+                vertexShader: `
+                    void main() {
+                        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                        // Make nodes circular and responsive to distance
+                        gl_PointSize = 1.0 * (300.0 / -mvPosition.z);
+                        gl_Position = projectionMatrix * mvPosition;
+                    }
+                `,
+                fragmentShader: `
+                    void main() {
+                        float dist = distance(gl_PointCoord, vec2(0.5));
+                        if (dist > 0.5) discard;
+                        float alpha = smoothstep(0.5, 0.2, dist) * 0.5;
+                        gl_FragColor = vec4(1.0, 1.0, 1.0, alpha);
+                    }
+                `,
+                transparent: true,
+                depthWrite: false
+            });
+
+            const pNodes = new THREE.Points(nodesGeo, nodesMat);
+            pNodes.name = "nodes";
+            plexusGroup.add(pNodes);
+
+            const linesGeo = new THREE.BufferGeometry();
+            const linesMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.08 });
+            const pLines = new THREE.LineSegments(linesGeo, linesMat);
+            pLines.name = "lines";
+            plexusGroup.add(pLines);
+        }
+
+        function createSceneContent() {
+            mainGroup = new THREE.Group();
+            scene.add(mainGroup);
+
+            const palette = [
+                new THREE.Color('#A700FF'), // Purple
+                new THREE.Color('#3A8DF8'), // Blue
+                new THREE.Color('#47B3BB')  // Teal
+            ];
+
+            const blobGeo = new THREE.IcosahedronGeometry(1.0, 5);
+
+            for (let i = 0; i < 6; i++) {
+                const color = palette[i % palette.length];
+
+                const mat = new THREE.ShaderMaterial({
+                    uniforms: {
+                        uTime: { value: 0 },
+                        uColor: { value: color },
+                        uOpacity: { value: 0.95 } // Here is the Opacity control (0.0 to 1.0)
+                    },
+                    vertexShader: document.getElementById('blobVertexShader').textContent,
+                    fragmentShader: document.getElementById('blobFragmentShader').textContent,
+                    transparent: true
+                });
+
+                const shape = new THREE.Mesh(blobGeo, mat);
+                shape.scale.set(0.5, 0.5, 0.5);
+
+                shape.position.set(
+                    (Math.random() - 0.5) * 45,
+                    (Math.random() - 0.5) * 35,
+                    (Math.random() - 0.5) * 15
+                );
+
+                shape.userData = {
+                    rotX: (Math.random() - 0.5) * 0.01,
+                    rotY: (Math.random() - 0.5) * 0.01,
+                    drift: new THREE.Vector3((Math.random() - 0.5) * 0.012, (Math.random() - 0.5) * 0.012, 0),
+                    phase: Math.random() * Math.PI * 2,
+                    spinSpeed: 0,
+                    isPhoto: true,
+                    photoIndex: i // Maps to 6 photos
+                };
+
+                interactiveObjects.push(shape);
+                mainGroup.add(shape);
+            }
+
+            // --- Dark Navy AI Blobs ---
+            const navyPalette = [
+                new THREE.Color('#060F1E'),
+                new THREE.Color('#071530'),
+                new THREE.Color('#0A1628'),
+                new THREE.Color('#040C20')
+            ];
+
+            for (let i = 0; i < 4; i++) {
+                const color = navyPalette[i % navyPalette.length];
+
+                const aiMat = new THREE.ShaderMaterial({
+                    uniforms: {
+                        uTime: { value: 0 },
+                        uColor: { value: color },
+                        uOpacity: { value: 0.92 }
+                    },
+                    vertexShader: document.getElementById('blobVertexShader').textContent,
+                    fragmentShader: document.getElementById('blobFragmentShader').textContent,
+                    transparent: true
+                });
+
+                const aiShape = new THREE.Mesh(blobGeo, aiMat);
+                aiShape.scale.set(0.6, 0.6, 0.6);
+
+                aiShape.position.set(
+                    (Math.random() - 0.5) * 40,
+                    (Math.random() - 0.5) * 30,
+                    (Math.random() - 0.5) * 12
+                );
+
+                aiShape.userData = {
+                    rotX: (Math.random() - 0.5) * 0.008,
+                    rotY: (Math.random() - 0.5) * 0.008,
+                    drift: new THREE.Vector3((Math.random() - 0.5) * 0.010, (Math.random() - 0.5) * 0.010, 0),
+                    phase: Math.random() * Math.PI * 2,
+                    spinSpeed: 0,
+                    isAI: true,
+                    aiIndex: i
+                };
+
+                interactiveObjects.push(aiShape);
+                mainGroup.add(aiShape);
+            }
+        }
+
+        // --- AI & Camera Logic ---
+
+        async function startApp() {
+            const btn = document.getElementById('start-btn');
+            btn.innerText = "LOADING...";
+            btn.style.opacity = "0.7";
+
+            try {
+                // 1. Load Model
+                logModel.innerText = "Model: Loading Blazeface...";
+                model = await blazeface.load();
+                logModel.innerText = "Model: Ready";
+                logModel.className = "status-line success";
+
+                // 2. Setup Camera
+                logCam.innerText = "Camera: Requesting...";
+                await setupCamera();
+                logCam.innerText = "Camera: Active";
+                logCam.className = "status-line success";
+
+                // 3. Start Prediction Loop
+                btn.style.display = 'none';
+                isTracking = true;
+                predict();
+
+            } catch (err) {
+                console.error(err);
+                btn.innerText = "START (FALLBACK MODE)";
+                btn.style.opacity = "1";
+                btn.onclick = () => { btn.style.display = 'none'; }; // Just hide button
+
+                logCam.innerText = "Camera: Blocked/Failed";
+                logCam.className = "status-line error";
+                logModel.innerText = "Fallback: Touch/Mouse Enabled";
+                logModel.className = "status-line info";
+            }
+        }
+
+        async function setupCamera() {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                'audio': false,
+                'video': { facingMode: 'user', width: 320, height: 240 } // Low res is faster
+            });
+            video.srcObject = stream;
+
+            return new Promise((resolve) => {
+                video.onloadedmetadata = () => {
+                    video.play();
+                    resolve(video);
+                };
+            });
+        }
+
+        async function predict() {
+            if (!isTracking) return;
+
+            // Estimate faces
+            const returnTensors = false;
+            const predictions = await model.estimateFaces(video, returnTensors);
+
+            if (predictions.length > 0) {
+                // Get bounds
+                const start = predictions[0].topLeft; // [x, y]
+                const end = predictions[0].bottomRight; // [x, y]
+                const size = [end[0] - start[0], end[1] - start[1]];
+
+                // Calculate center
+                const faceCenterX = start[0] + (size[0] / 2);
+                const faceCenterY = start[1] + (size[1] / 2);
+
+                // Normalize to -1 to 1 range
+                // Video is mirrored usually, so we flip X
+                const normX = -1 * ((faceCenterX / video.videoWidth) * 2 - 1);
+                const normY = -1 * ((faceCenterY / video.videoHeight) * 2 - 1); // Invert Y
+
+                targetX = normX * CONFIG.camSensitivity;
+                targetY = normY * CONFIG.camSensitivity;
+
+                logTrack.innerText = `Face: X:${targetX.toFixed(2)} Y:${targetY.toFixed(2)}`;
+                logTrack.className = "status-line success";
+            } else {
+                logTrack.innerText = "Face: Not detected";
+                logTrack.className = "status-line warn";
+            }
+
+            // Loop
+            requestAnimationFrame(predict);
+        }
+
+        // --- Fallback Inputs (Mouse/Touch) ---
+        function onMouseMove(e) {
+            if (isTracking && logCam.className.includes("success")) return; // Don't override AI if it's working
+            targetX = (e.clientX / window.innerWidth) * 2 - 1;
+            targetY = -(e.clientY / window.innerHeight) * 2 + 1;
+            logTrack.innerText = "Input: Mouse (Fallback)";
+        }
+
+        function onTouchMove(e) {
+            e.preventDefault();
+            const t = e.touches[0];
+            targetX = (t.clientX / window.innerWidth) * 2 - 1;
+            targetY = -(t.clientY / window.innerHeight) * 2 + 1;
+
+            // Boost sensitivity for touch
+            targetX *= 2;
+            targetY *= 2;
+            logTrack.innerText = "Input: Touch (Fallback)";
+        }
+
+        // --- Main Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.01;
+
+            // Update Star Twinkle Shader
+            if (starGroup) {
+                starGroup.children[0].material.uniforms.uTime.value = time;
+            }
+
+            // Animate Cosmic Dust
+            dustNodes.forEach(dust => {
+                dust.position.add(dust.userData.vel);
+                if (Math.abs(dust.position.x) > 150) dust.userData.vel.x *= -1;
+                if (Math.abs(dust.position.y) > 150) dust.userData.vel.y *= -1;
+            });
+
+            // Smoothly interpolate camera
+            currentX += (targetX - currentX) * CONFIG.smoothFactor;
+            currentY += (targetY - currentY) * CONFIG.smoothFactor;
+
+            camera.position.x = currentX * 4;
+            camera.position.y = currentY * 4;
+            camera.lookAt(0, 0, 0);
+
+            // Animate Plexus (nodes + lines)
+            if (plexusGroup) {
+                const nodes = plexusGroup.getObjectByName("nodes");
+                const lines = plexusGroup.getObjectByName("lines");
+                const positions = nodes.geometry.attributes.position.array;
+                const linePosArr = [];
+
+                for (let i = 0; i < CONFIG.plexusCount; i++) {
+                    const n = plexusNodes[i];
+                    n.pos.add(n.vel);
+                    if (Math.abs(n.pos.x) > 80) n.vel.x *= -1;
+                    if (Math.abs(n.pos.y) > 80) n.vel.y *= -1;
+                    if (Math.abs(n.pos.z) > 80) n.vel.z *= -1;
+
+                    positions[i * 3] = n.pos.x;
+                    positions[i * 3 + 1] = n.pos.y;
+                    positions[i * 3 + 2] = n.pos.z;
+                }
+                nodes.geometry.attributes.position.needsUpdate = true;
+
+                for (let i = 0; i < CONFIG.plexusCount; i++) {
+                    for (let j = i + 1; j < CONFIG.plexusCount; j++) {
+                        const dist = plexusNodes[i].pos.distanceTo(plexusNodes[j].pos);
+                        if (dist < CONFIG.maxDistance) {
+                            linePosArr.push(plexusNodes[i].pos.x, plexusNodes[i].pos.y, plexusNodes[i].pos.z);
+                            linePosArr.push(plexusNodes[j].pos.x, plexusNodes[j].pos.y, plexusNodes[j].pos.z);
+                        }
+                    }
+                }
+                lines.geometry.setAttribute('position', new THREE.Float32BufferAttribute(linePosArr, 3));
+            }
+
+            // Animate Photo Shapes (Organic Swimming + Rotate)
+            interactiveObjects.forEach(shape => {
+                shape.rotation.x += shape.userData.rotX;
+                shape.rotation.y += shape.userData.rotY;
+
+                // Update shader for flat metaball wobble
+                if (shape.userData.isPhoto && shape.material.uniforms) {
+                    shape.material.uniforms.uTime.value = time;
+
+                    // Add liquid "swimming" motion
+                    const p = shape.userData.phase;
+                    shape.position.x += Math.sin(time * 0.5 + p) * 0.02;
+                    shape.position.y += Math.cos(time * 0.3 + p) * 0.02;
+                }
+
+                shape.position.add(shape.userData.drift);
+                // Wider swimming boundaries
+                if (Math.abs(shape.position.x) > 40) shape.userData.drift.x *= -1;
+                if (Math.abs(shape.position.y) > 35) shape.userData.drift.y *= -1;
+
+                if (shape.userData.spinSpeed > 0) {
+                    shape.rotation.y += shape.userData.spinSpeed;
+                    shape.userData.spinSpeed *= 0.9;
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        // Start
+        initThree();
+        document.getElementById('start-btn').addEventListener('click', startApp);
+
+    </script>
+</body>
+
+</html>
